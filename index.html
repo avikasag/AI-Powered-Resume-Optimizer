@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ATS Resume Optimizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --accent: #7fffb2;
+      --accent2: #00c8ff;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --error: #ff6b6b;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(127,255,178,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(0,200,255,0.05) 0%, transparent 60%);
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid rgba(127,255,178,0.3);
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1px;
+    }
+
+    h1 span {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      background-clip: text; /* Standard property for compatibility */
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 15px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* Steps indicator */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 36px;
+    }
+
+    .step-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      border: 2px solid var(--border);
+      color: var(--muted);
+      transition: all 0.3s ease;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .step-dot.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 12px rgba(127,255,178,0.3);
+    }
+
+    .step-dot.done {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0a0a0f;
+    }
+
+    .step-line {
+      flex: 1; height: 1px;
+      background: var(--border);
+      max-width: 60px;
+    }
+
+    .step-line.done { background: var(--accent); }
+
+    .step-label {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .step-label.active { color: var(--accent); }
+
+    /* Card */
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .card.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0a0a0f;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    .btn {
+      margin-top: 16px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, var(--accent), #4adea0);
+      color: #0a0a0f;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Result */
+    .result-card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid rgba(127,255,178,0.25);
+      border-radius: var(--radius);
+      padding: 32px;
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .result-card.active { display: block; }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .result-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .copy-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      padding: 6px 14px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover { background: rgba(127,255,178,0.1); }
+
+    .result-body {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.9;
+      white-space: pre-wrap;
+      color: var(--text);
+      min-height: 80px;
+    }
+
+    .loader {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+    }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .restart-btn {
+      margin-top: 20px;
+      padding: 10px 22px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .restart-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* Steps labels row */
+    .steps-labels {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 720px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge">⚡ Powered by Hugging Face</div>
+    <h1>ATS Resume<br><span>Optimizer</span></h1>
+    <p class="subtitle">// paste job description → add resume points → get ATS-optimized output</p>
+  </header>
+
+  <!-- Step dots -->
+  <div class="steps-bar">
+    <div class="step-dot active" id="dot1">1</div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-dot" id="dot2">2</div>
+    <div class="step-line" id="line2"></div>
+    <div class="step-dot" id="dot3">3</div>
+  </div>
+
+  <!-- Step 1: Job Description -->
+  <div class="card active" id="step1">
+    <div class="card-header">
+      <div class="step-num">1</div>
+      <div class="card-title">Paste the Job Description</div>
+    </div>
+    <p class="card-desc">// copy the full job posting — the more detail, the better the optimization</p>
+    <textarea id="jobDesc" rows="10" placeholder="Paste the job description here...&#10;&#10;e.g. We are looking for a Software Engineer with experience in Python, REST APIs, AWS..."></textarea>
+    <br>
+    <button class="btn" onclick="submitJobDesc()">Submit Job Description →</button>
+  </div>
+
+  <!-- Step 2: Resume Points -->
+  <div class="card" id="step2">
+    <div class="card-header">
+      <div class="step-num">2</div>
+      <div class="card-title">Add Your Resume Points</div>
+    </div>
+    <p class="card-desc">// paste your existing bullet points — one per line is ideal</p>
+    <textarea id="resumePoints" rows="10" placeholder="Paste your resume points here...&#10;&#10;e.g.&#10;- Built REST APIs using Django&#10;- Worked on database optimization&#10;- Helped deploy apps to cloud"></textarea>
+    <br>
+    <button class="btn" onclick="submitResume()">Optimize My Resume →</button>
+  </div>
+
+  <!-- Step 3: Result -->
+  <div class="result-card" id="step3">
+    <div class="result-header">
+      <div class="result-title">✦ ATS-Optimized Points</div>
+      <button class="copy-btn" onclick="copyResult()">Copy All</button>
+    </div>
+    <div class="result-body" id="resultBody">
+      <div class="loader">
+        <div class="spinner"></div>
+        <span>Analyzing and optimizing your resume...</span>
+      </div>
+    </div>
+    <button class="restart-btn" onclick="restart()">↺ Start Over</button>
+  </div>
+
+  <script>
+    let jobDescription = "";
+    let resumePoints = "";
+
+    function setStep(n) {
+      // Update dots
+      for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById(`dot${i}`);
+        dot.classList.remove('active', 'done');
+        if (i < n) dot.classList.add('done');
+        else if (i === n) dot.classList.add('active');
+      }
+      for (let i = 1; i <= 2; i++) {
+        const line = document.getElementById(`line${i}`);
+        line.classList.toggle('done', i < n);
+      }
+    }
+
+    function submitJobDesc() {
+      const val = document.getElementById('jobDesc').value.trim();
+      if (!val) { alert('Please paste a job description first.'); return; }
+      jobDescription = val;
+
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+      setStep(2);
+    }
+
+    function submitResume() {
+      const val = document.getElementById('resumePoints').value.trim();
+      if (!val) { alert('Please add your resume points first.'); return; }
+      resumePoints = val;
+
+      document.getElementById('step2').classList.remove('active');
+      document.getElementById('step3').classList.add('active');
+      setStep(3);
+
+      fetchOptimization();
+    }
+
+    async function fetchOptimization() {
+      const resultBody = document.getElementById('resultBody');
+      resultBody.innerHTML = `<div class="loader"><div class="spinner"></div><span>Analyzing and optimizing your resume...</span></div>`;
+
+      try {
+        const response = await fetch('/optimize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            job_description: jobDescription,
+            resume_points: resumePoints
+          })
+        });
+
+        const data = await response.json();
+        if (data.result) {
+          resultBody.textContent = data.result.trim();
+        } else {
+          resultBody.textContent = "Something went wrong. Please try again.";
+        }
+      } catch (err) {
+        resultBody.textContent = "Error connecting to the server. Make sure Flask is running.";
+      }
+    }
+
+    function copyResult() {
+      const text = document.getElementById('resultBody').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy All', 2000);
+      });
+    }
+
+    function restart() {
+      document.getElementById('step3').classList.remove('active');
+      document.getElementById('step1').classList.add('active');
+      document.getElementById('jobDesc').value = '';
+      document.getElementById('resumePoints').value = '';
+      jobDescription = ''; resumePoints = '';
+      setStep(1);
+    }
+  </script>
+</body>
+</html>
